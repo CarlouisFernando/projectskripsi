@@ -3,7 +3,11 @@ import numpy as np
 from utils.model_loader import load_config, load_sarimax, load_boosting_models
 from utils.preprocessing import build_master_dataframe
 
-def run_prediction(horizon: int, antam_df, usd_df, static_df):
+def run_prediction(horizon: int, antam_df, usd_df, static_df, base_date=None):
+    # Ensure antam_df dates are datetime
+    antam_df = antam_df.copy()
+    antam_df['date'] = pd.to_datetime(antam_df['date'])
+    
     config = load_config()
     sarimax = load_sarimax()
     xgb_models, lgb_models = load_boosting_models(config["max_horizon"])
@@ -36,6 +40,12 @@ def run_prediction(horizon: int, antam_df, usd_df, static_df):
             "Data kosong setelah dropna pada feature/exogenous"
             "Kemungkinan data historis belum cukup atau ada kolom yang seluruhnya NaN"
         )
+
+    # Jika base_date diberikan, filter data hingga base_date
+    if base_date is not None:
+        df_feat = df_feat[df_feat.index <= base_date].copy()
+        if df_feat.empty:
+            raise ValueError(f"Tidak ada data hingga tanggal {base_date}. Pastikan data historis mencakup tanggal tersebut.")
 
     latest_row = df_feat.iloc[-1]
     X_feat = latest_row[feature_cols].values.reshape(1, -1)
@@ -83,5 +93,13 @@ def run_prediction(horizon: int, antam_df, usd_df, static_df):
         })
 
     result_df = pd.DataFrame(rows)
+
+    # Tambahkan data aktual jika tersedia
+    result_df['Aktual'] = None
+    for idx, row in result_df.iterrows():
+        pred_date = row['pred_date']
+        actual_row = antam_df[antam_df['date'] == pred_date]
+        if not actual_row.empty:
+            result_df.at[idx, 'Aktual'] = actual_row['harga_emas_antam_idr'].values[0]
 
     return df_feat, result_df

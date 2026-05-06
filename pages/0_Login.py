@@ -15,7 +15,7 @@ ensure_admin_user()
 if "user_id" in st.session_state:
     st.info(f"Anda sudah login sebagai {st.session_state.get('username')}.")
     if st.button("Kembali ke Home"):
-        st.switch_page("pages/1_Home.py")
+        st.switch_page("pages/1_Prediction.py")
     st.stop()
 
 menu = st.radio("Menu", ["Login", "Register"])
@@ -27,10 +27,12 @@ if menu == "Register":
     password = st.text_input("Password", type="password")
 
     if st.button("Register"):
-        if register_user(username, password):
+        if not username.strip() or not password.strip():
+            st.error("Username dan password tidak boleh kosong.")
+        elif register_user(username, password):
             st.success("Register berhasil!")
         else:
-            st.error("Username sudah ada!")
+            st.error("Username sudah ada atau pendaftaran gagal.")
 
 elif menu == "Login":
     st.subheader("Login")
@@ -45,6 +47,6 @@ elif menu == "Login":
             st.session_state.user_id = user_id
             st.session_state.username = username
             st.success("Login berhasil!")
-            st.switch_page("pages/2_Prediction.py")
+            st.switch_page("pages/1_Prediction.py")
         else:
             st.error("Login gagal!")

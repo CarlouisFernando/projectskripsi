@@ -9,6 +9,12 @@ def hash_password(password):
 
 
 def register_user(username, password):
+    username = username.strip()
+    password = password.strip()
+
+    if not username or not password:
+        return False
+
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
